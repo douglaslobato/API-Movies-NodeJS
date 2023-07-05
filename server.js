@@ -1,13 +1,13 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
 const swaggerJSDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const connectToDatabase = require('./db');
 require('dotenv').config();
 
 // Configurações do servidor
 const app = express();
-const port = 3000;
+const port = process.env.PORT;
 
 // Configuração do Swagger
 const swaggerOptions = {
@@ -51,17 +51,8 @@ const movieRoutes = require('./app/routes/movieRoutes');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-const DB_USERNAME = process.env.DB_USERNAME;
-const DB_PASSWORD = process.env.DB_PASSWORD;
-
-// Configuração do MongoDB
-mongoose.connect(`mongodb+srv://${DB_USERNAME}:${DB_PASSWORD}@cluster0.9pxsej5.mongodb.net/MovieDB?retryWrites=true&w=majority`, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => {
-    console.log("Conectado ao banco!")
-})
-.catch((err) => console.log(err));
+// Conexão com o banco de dados
+connectToDatabase();
 
 // Rotas da API
 app.use('/api/movies', movieRoutes);
