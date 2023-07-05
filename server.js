@@ -46,6 +46,7 @@ const swaggerSpec = swaggerJSDoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const movieRoutes = require('./app/routes/movieRoutes');
+const authenticateRoutes = require('./app/routes/authenticateRoutes');
 
 // Configuração do parser de requisição
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -56,6 +57,7 @@ connectToDatabase();
 
 // Rotas da API
 app.use('/api/movies', movieRoutes);
+app.use('/api', authenticateRoutes);
 
 // Inicialização do servidor
 app.listen(port, () => {

@@ -5,8 +5,24 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const jwtSecret = process.env.JWT_SECRET;
-const AUTH_USERNAME = process.env.AUTH_USERNAME;
-const AUTH_PASSWORD = process.env.AUTH_PASSWORD;
+
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  console.log('Token recebido:', authHeader);
+  if (!authHeader) {
+    return res.status(401).json({ message: 'Token de autenticação não fornecido.' });
+  }
+
+  const token = authHeader.split(' ')[1]; // Removendo a palavra 'Bearer' e obtendo apenas o token
+
+  jwt.verify(token, jwtSecret, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Falha na autenticação do token.' });
+    }
+    req.user = user;
+    next();
+  });
+};
 
 /**
  * @swagger
@@ -34,77 +50,6 @@ const AUTH_PASSWORD = process.env.AUTH_PASSWORD;
  *         director: Nome exemplo
  *         releaseYear: 2010
  */
-
-/**
- * @swagger
- * /api/movies/login:
- *   post:
- *     summary: Autentica o usuário e retorna um token JWT
- *     tags: [Autenticação]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *                 description: Nome de usuário
- *               password:
- *                 type: string
- *                 description: Senha
- *             example:
- *               username: string
- *               password: string
- *     responses:
- *       200:
- *         description: Autenticação bem-sucedida. Retorna um token JWT.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   description: Token JWT para autenticação.
- *       401:
- *         description: Credenciais inválidas. A autenticação falhou.
- */
-// Rota de autenticação
-router.post('/login', (req, res) => {
-  // Autenticação do usuário
-  const username = req.body.username;
-  const password = req.body.password;
-
-  // Verificação do usuário e senha
-  if (username === AUTH_USERNAME && password === AUTH_PASSWORD) {
-    // Criação do token JWT
-    const token = jwt.sign({ username: username }, jwtSecret, { expiresIn: '1h' });
-    res.json({ token: token });
-  } else {
-    res.status(401).json({ message: 'Credenciais inválidas.' });
-  }
-});
-
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  console.log('Token recebido:', authHeader);
-  if (!authHeader) {
-    return res.status(401).json({ message: 'Token de autenticação não fornecido.' });
-  }
-
-  const token = authHeader.split(' ')[1]; // Removendo a palavra 'Bearer' e obtendo apenas o token
-
-  jwt.verify(token, jwtSecret, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'Falha na autenticação do token.' });
-    }
-    req.user = user;
-    next();
-  });
-};
-
 // Rotas protegidas, exigem autenticação
 router.use(authenticateToken);
 
@@ -187,19 +132,17 @@ router.get('/:id', (req, res) => {
  *       500:
  *         description: Erro interno do servidor
  */
-// Rota para criar um novo filme
+// Rota para criar um novofilme
 router.post('/', (req, res) => {
     const movie = new Movie(req.body);
-    movie
-      .save()
-      .then(savedMovie => {
-        res.status(201).json(savedMovie);
+    movie.save()
+      .then(() => {
+        res.status(201).json({ message: 'Filme criado com sucesso.' });
       })
       .catch(err => {
         res.status(500).send(err);
       });
   });
-  
 
 /**
  * @swagger
@@ -222,33 +165,32 @@ router.post('/', (req, res) => {
  *             $ref: '#/components/schemas/Movie'
  *     responses:
  *       200:
- *           description: Filme atualizado com sucesso
+ *         description: Filme atualizado com sucesso
  *       404:
- *           description: Filme não encontrado
+ *         description: Filme não encontrado
  *       500:
- *           description: Erro interno do servidor
+ *         description: Erro interno do servidor
  */
-
 // Rota para atualizar um filme existente
 router.put('/:id', (req, res) => {
     Movie.findByIdAndUpdate(req.params.id, req.body, { new: true })
-      .then(updatedMovie => {
-        if (!updatedMovie) {
+      .then(movie => {
+        if (!movie) {
           res.status(404).json({ message: 'Filme não encontrado.' });
         } else {
-          res.json(updatedMovie);
+          res.json({ message: 'Filme atualizado com sucesso.' });
         }
       })
       .catch(err => {
         res.status(500).send(err);
       });
   });
- 
+
 /**
  * @swagger
  * /api/movies/{id}:
  *   delete:
- *     summary: Exclui um filme
+ *     summary: Remove um filme existente
  *     tags: [Filmes]
  *     parameters:
  *       - in: path
@@ -256,29 +198,28 @@ router.put('/:id', (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: ID do filme a ser excluído
+ *         description: ID do filme a ser removido
  *     responses:
  *       200:
- *         description: Filme excluído com sucesso
+ *         description: Filme removido com sucesso
  *       404:
  *         description: Filme não encontrado
  *       500:
  *         description: Erro interno do servidor
  */
-// Rota para excluir um filme
+// Rota para remover um filme existente
 router.delete('/:id', (req, res) => {
     Movie.findByIdAndRemove(req.params.id)
-      .then(deletedMovie => {
-        if (!deletedMovie) {
+      .then(movie => {
+        if (!movie) {
           res.status(404).json({ message: 'Filme não encontrado.' });
         } else {
-          res.json({ message: 'Filme excluído com sucesso.' });
+          res.json({ message: 'Filme removido com sucesso.' });
         }
       })
       .catch(err => {
         res.status(500).send(err);
       });
   });
-  
-  module.exports = router;
-  
+
+module.exports = router;
